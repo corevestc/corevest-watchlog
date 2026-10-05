@@ -1,0 +1,34 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Dependencies
+node_modules
+
+# Build
+dist
+build
+*.tsbuildinfo
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# TailGrids template internals (do not install or build inside the source kit for WatchLog)
+tailgrids/node_modules
+tailgrids/.turbo
+tailgrids/apps/docs/.next
+tailgrids/apps/docs/out
+tailgrids/packages/**/dist
+
+# Test / coverage
+coverage

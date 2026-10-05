@@ -1,0 +1,23 @@
+# WatchLog local dependencies
+# Copy .env.example to .env before starting the service.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: watchlog-postgres
+    environment:
+      POSTGRES_USER: watchlog
+      POSTGRES_PASSWORD: watchlog
+      POSTGRES_DB: watchlog
+    ports:
+      - "5432:5432"
+    volumes:
+      - watchlog_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U watchlog -d watchlog"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  watchlog_pg:

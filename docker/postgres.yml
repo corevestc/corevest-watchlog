@@ -1,0 +1,24 @@
+# WatchLog PostgreSQL only — not the Python DSE stockdb.
+# Use when stockdb already occupies host port 5432:
+#   docker compose -f docker/postgres.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: watchlog-postgres
+    environment:
+      POSTGRES_USER: watchlog
+      POSTGRES_PASSWORD: watchlog
+      POSTGRES_DB: watchlog
+    ports:
+      - "5433:5432"
+    volumes:
+      - watchlog_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U watchlog -d watchlog"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  watchlog_pg:

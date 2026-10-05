@@ -1,0 +1,71 @@
+/* Light orange brand — peach, not burnt. */
+
+[data-theme="light"],
+[data-theme="dark"],
+:root {
+  --theme-primary-50: #fffbf5;
+  --theme-primary-100: #fff4e5;
+  --theme-primary-200: #ffe8c7;
+  --theme-primary-300: #ffd6a3;
+  --theme-primary-400: #ffc47a;
+  --theme-primary-500: #ffb347;
+  --theme-primary-600: #ffa033;
+  --theme-primary-700: #f08c1a;
+  --theme-primary-800: #d97706;
+  --theme-primary-900: #b45309;
+  --theme-primary-950: #78350f;
+  --theme-primary-text: white;
+
+  --theme-button-primary-background: #ffb347;
+  --theme-button-primary-hover-background: #ffa033;
+  --theme-button-primary-focus-ring: rgba(255, 179, 71, 0.28);
+  --theme-button-group-primary-hover-background: #ffb347;
+  --theme-button-group-primary-text: #f08c1a;
+
+  --theme-badge-primary-text: #f08c1a;
+  --theme-badge-primary-icon-color: #f08c1a;
+
+  --theme-sidebar-nav-active-text: #f08c1a;
+  --theme-sidebar-badge-background: #ffb347;
+
+  --theme-input-primary-focus-border: #ffc47a;
+  --theme-checkbox-checked-border: #ffb347;
+  --theme-checkbox-checked-background: #ffb347;
+  --theme-datepicker-selected-background: #ffb347;
+  --theme-calendar-primary-badge: #ffb347;
+  --theme-pricing-icon-color: #ffb347;
+  --theme-chat-list-background-secondary: #ffb347;
+  --theme-section-title-badge: #ffb347;
+  --theme-toggle-active-background: #ffb347;
+}
+
+[data-theme="light"] {
+  --theme-neutral-brand-color: #ffb347;
+  --theme-badge-primary-background: #fff4e5;
+  --theme-sidebar-nav-active-background: #fff4e5;
+  --theme-sidebar-nav-focused-background: #fff4e5;
+  --theme-tab-secondary-active-background: #fff4e5;
+  --theme-calendar-primary-background: #fff4e5;
+  --theme-pricing-icon-background: #fff4e5;
+  --theme-faq-secondary-active-background: #fff4e5;
+  --theme-faq-secondary-active-border: #ffe8c7;
+  --theme-chat-list-background-secondary-alt: #ffe8c7;
+  --theme-section-title-badge-background: #ffb34714;
+}
+
+[data-theme="dark"] {
+  --theme-neutral-brand-color: #ffc47a;
+  --theme-badge-primary-background: #ffb34726;
+  --theme-badge-primary-text: #ffc47a;
+  --theme-badge-primary-icon-color: #ffc47a;
+  --theme-sidebar-nav-active-text: #ffc47a;
+  --theme-sidebar-nav-active-background: #ffb3471f;
+  --theme-sidebar-nav-focused-background: #ffb3471f;
+  --theme-tab-secondary-active-background: #ffc47a33;
+  --theme-calendar-primary-background: #fff4e5;
+  --theme-pricing-icon-background: #ffb3471a;
+  --theme-faq-secondary-active-background: #fff4e5;
+  --theme-faq-secondary-active-border: #ffe8c7;
+  --theme-chat-list-background-secondary-alt: #ffb34733;
+  --theme-section-title-badge-background: #ffb34726;
+}

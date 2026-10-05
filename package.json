@@ -1,0 +1,10 @@
+{
+  "name": "corevest-watchlog",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "client:dev": "npm --prefix client run dev",
+    "service:dev": "node scripts/service-dev.mjs",
+    "service:migrate": "npm --prefix service run migrate:up"
+  }
+}

@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WatchLog account</title>
+    <style>
+      :root {
+        font-family: "DM Sans", system-ui, sans-serif;
+        color: #1a1d21;
+        background: #f4f6f8;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+      }
+      .card {
+        width: min(420px, 100%);
+        background: #fff;
+        border-radius: 16px;
+        padding: 28px;
+        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+        border: 1px solid #e7eaee;
+      }
+      h1 { margin: 0 0 6px; font-size: 22px; }
+      p { margin: 0 0 20px; color: #5b6570; font-size: 14px; }
+      label { display: block; font-size: 14px; margin: 0 0 6px; }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #cfd6de;
+        border-radius: 10px;
+        padding: 10px 12px;
+        margin-bottom: 14px;
+        font: inherit;
+      }
+      button {
+        width: 100%;
+        border: 0;
+        border-radius: 10px;
+        padding: 11px 14px;
+        background: #ffb347;
+        color: #fff;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled { opacity: 0.6; cursor: not-allowed; }
+      .switch { margin-top: 14px; text-align: center; font-size: 14px; }
+      a { color: #f08c1a; cursor: pointer; }
+      .error { color: #b42318; font-size: 14px; margin-bottom: 12px; }
+      .brand { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; justify-content: center; }
+      .logo {
+        width: 36px; height: 36px; border-radius: 8px; background: #ffb347;
+        color: #fff; display: grid; place-items: center; font-weight: 700; font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <form class="card" id="form">
+      <div class="brand">
+        <div class="logo">WL</div>
+        <div>
+          <strong>WatchLog</strong>
+          <div style="font-size:12px;color:#5b6570">CoreVest Capital</div>
+        </div>
+      </div>
+      <h1 id="title">Create account</h1>
+      <p id="subtitle">Only email and a password. Social login comes later.</p>
+      <div class="error" id="error" hidden></div>
+      <label for="email">Email</label>
+      <input id="email" type="email" autocomplete="email" required />
+      <label for="password">Password (8+ characters)</label>
+      <input id="password" type="password" autocomplete="new-password" required minlength="8" />
+      <button id="submit" type="submit">Create account</button>
+      <div class="switch">
+        <span id="switch-text">Already have one?</span>
+        <a id="switch">Sign in</a>
+      </div>
+    </form>
+    <script>
+      const STORAGE_KEY = "watchlog.auth";
+      let mode = new URLSearchParams(location.search).get("mode") === "login" ? "login" : "register";
+      const title = document.getElementById("title");
+      const subtitle = document.getElementById("subtitle");
+      const submit = document.getElementById("submit");
+      const switchText = document.getElementById("switch-text");
+      const switchLink = document.getElementById("switch");
+      const errorEl = document.getElementById("error");
+      const password = document.getElementById("password");
+
+      function paint() {
+        const register = mode === "register";
+        title.textContent = register ? "Create account" : "Sign in";
+        subtitle.textContent = register
+          ? "Only email and a password. Social login comes later."
+          : "Email and password.";
+        submit.textContent = register ? "Create account" : "Sign in";
+        switchText.textContent = register ? "Already have one?" : "New here?";
+        switchLink.textContent = register ? "Sign in" : "Create an account";
+        password.autocomplete = register ? "new-password" : "current-password";
+      }
+
+      switchLink.addEventListener("click", () => {
+        mode = mode === "register" ? "login" : "register";
+        history.replaceState(null, "", mode === "login" ? "?mode=login" : "?mode=register");
+        errorEl.hidden = true;
+        paint();
+      });
+
+      document.getElementById("form").addEventListener("submit", async (event) => {
+        event.preventDefault();
+        errorEl.hidden = true;
+        submit.disabled = true;
+        try {
+          const path = mode === "register" ? "/api/v1/auth/register" : "/api/v1/auth/login";
+          const response = await fetch(path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              email: document.getElementById("email").value,
+              password: password.value
+            })
+          });
+          const text = await response.text();
+          let body = {};
+          try {
+            body = text ? JSON.parse(text) : {};
+          } catch {
+            body = {};
+          }
+          if (!response.ok) {
+            throw new Error(body.error?.message || (response.status === 401
+              ? "Invalid email or password"
+              : "Request failed"));
+          }
+          if (!body.data?.token) {
+            throw new Error("Could not continue");
+          }
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify({ state: { token: body.data.token, user: body.data.user }, version: 0 })
+          );
+          location.href = "/";
+        } catch (err) {
+          errorEl.textContent = err.message || "Could not continue";
+          errorEl.hidden = false;
+        } finally {
+          submit.disabled = false;
+        }
+      });
+
+      paint();
+    </script>
+  </body>
+</html>
