@@ -1,4 +1,9 @@
 import {
+  createSelectorCreator,
+  lruMemoize,
+  require_with_selector
+} from "./chunk-CIQK4ERA.js";
+import {
   autoUpdate,
   clamp,
   evaluate,
@@ -33,11 +38,6 @@ import {
 import {
   require_jsx_runtime
 } from "./chunk-DVVMRFC2.js";
-import {
-  createSelectorCreator,
-  lruMemoize,
-  require_with_selector
-} from "./chunk-CIQK4ERA.js";
 import {
   require_shim
 } from "./chunk-LURIECZM.js";

@@ -15,6 +15,12 @@ import { GetDailyModelWatchlist } from "../../../application/watchlist/get-daily
 import { GetWatchlistRow } from "../../../application/watchlist/get-watchlist-row.js";
 import { ListAllWatchlist } from "../../../application/watchlist/list-all-watchlist.js";
 import { ListDailyWatchlist } from "../../../application/watchlist/list-daily-plan.js";
+import { LoadWatchlistBoard } from "../../../application/watchlist/load-watchlist-board.js";
+import {
+  LoadWatchlistSummary,
+  type SummaryModelFilter
+} from "../../../application/watchlist/load-watchlist-summary.js";
+import { LoadWatchlistV0 } from "../../../application/watchlist/load-watchlist-v0.js";
 import { PatchWatchlistRow } from "../../../application/watchlist/patch-watchlist-row.js";
 import { SaveWatchlistRow } from "../../../application/watchlist/save-watchlist-row.js";
 import { SaveWatchlistSelection } from "../../../application/watchlist/save-watchlist-selection.js";
@@ -24,6 +30,8 @@ import { evaluateBuyGates, toBuyGateInput } from "../../../domain/watchlist/buy-
 import { selectionSchema, saveSignalsSchema } from "../dto/ml-watchlist-dto.js";
 import {
   isoDate,
+  summaryModelsSchema,
+  summaryScripSchema,
   watchlistCreateSchema,
   watchlistDecisionSchema,
   watchlistPatchSchema
@@ -39,6 +47,9 @@ export class WatchlistPlanController {
     @Inject(GetDailyModelWatchlist) private readonly dailyModel: GetDailyModelWatchlist,
     @Inject(UpdateWatchlistOutcomes) private readonly updateOutcomes: UpdateWatchlistOutcomes,
     @Inject(ListDailyWatchlist) private readonly listDaily: ListDailyWatchlist,
+    @Inject(LoadWatchlistBoard) private readonly loadBoard: LoadWatchlistBoard,
+    @Inject(LoadWatchlistV0) private readonly loadV0: LoadWatchlistV0,
+    @Inject(LoadWatchlistSummary) private readonly loadSummary: LoadWatchlistSummary,
     @Inject(ListAllWatchlist) private readonly listAll: ListAllWatchlist,
     @Inject(GetWatchlistRow) private readonly getRow: GetWatchlistRow,
     @Inject(SaveWatchlistRow) private readonly saveRow: SaveWatchlistRow,
@@ -73,6 +84,36 @@ export class WatchlistPlanController {
       plannedStop: parsed.plannedStop ?? null,
       plannedTarget: parsed.plannedTarget ?? null
     });
+    return { data };
+  }
+
+  @Get("board")
+  async board(@Query("date") date?: unknown) {
+    const raw = queryString(date);
+    const requested = raw ? parseDto(isoDate, raw) : null;
+    const data = await this.loadBoard.execute(requested);
+    return { data };
+  }
+
+  @Get("v0")
+  async v0(@Query("date") date?: unknown) {
+    const raw = queryString(date);
+    const requested = raw ? parseDto(isoDate, raw) : null;
+    const data = await this.loadV0.execute(requested);
+    return { data };
+  }
+
+  @Get("summary")
+  async summary(
+    @Query("date") date?: unknown,
+    @Query("models") models?: unknown,
+    @Query("scrip") scrip?: unknown
+  ) {
+    const raw = queryString(date);
+    const requested = raw ? parseDto(isoDate, raw) : null;
+    const filter = parseDto(summaryModelsSchema, queryString(models) ?? "all") as SummaryModelFilter;
+    const stock = parseDto(summaryScripSchema, queryString(scrip) ?? "");
+    const data = await this.loadSummary.execute(requested, filter, stock);
     return { data };
   }
 

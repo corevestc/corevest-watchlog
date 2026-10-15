@@ -21,6 +21,7 @@ import {
   TableRoot,
   TableRow
 } from "@/components/ui/table";
+import { TabContent, TabList, TabRoot, TabTrigger } from "@/components/ui/tabs";
 import { TextArea } from "@/components/ui/text-area";
 import { TextField } from "@/components/ui/text-field";
 import { Toast } from "@/components/ui/toast";
@@ -40,6 +41,58 @@ import { useClient } from "@/presentation/hooks/useClient";
 type SectorOption = {
   id: number;
   name: string;
+};
+
+type BoardRow = {
+  tradeDate: string;
+  watchlistRank: number;
+  scrip: string;
+  category: string | null;
+  earlyPct: number | null;
+  earlyRank: number | null;
+  strongPct: number | null;
+  strongRank: number | null;
+  signalPrice: number | null;
+  sector: string | null;
+  setupStage: string | null;
+  marketStructure: string | null;
+  relativeVolume: number | null;
+  rsi14: number | null;
+  preBreakoutScore: number | null;
+};
+
+type V0Row = {
+  tradeDate: string;
+  watchlistRank: number;
+  scrip: string;
+  category: string | null;
+  chancePct: number | null;
+  signalPrice: number | null;
+  sector: string | null;
+  setupStage: string | null;
+  marketStructure: string | null;
+  relativeVolume: number | null;
+  breakoutPressure: number | null;
+  resistanceDistancePct: number | null;
+};
+
+type SummaryRow = {
+  summaryRank: number;
+  scrip: string;
+  dayCount: number;
+  windowDays: number;
+  streak: number;
+  models: string;
+  latestDate: string;
+  category: string | null;
+  v0Pct: number | null;
+  earlyPct: number | null;
+  strongPct: number | null;
+  signalPrice: number | null;
+  sector: string | null;
+  marketStructure: string | null;
+  windowFrom: string;
+  windowTo: string;
 };
 
 function todayUtc() {
@@ -149,6 +202,20 @@ function previewRewardRisk(form: FormState): number | null {
 function intOrNull(value: string): number | null {
   const n = num(value);
   return n === null ? null : Math.trunc(n);
+}
+
+function ScripLink({ scrip }: { scrip: string }) {
+  const symbol = encodeURIComponent(scrip.trim());
+  return (
+    <a
+      className="text-title-50 underline-offset-2 hover:underline"
+      href={`https://stocknow.com.bd/search?symbol=${symbol}`}
+      target="_blank"
+      rel="noreferrer"
+    >
+      {scrip}
+    </a>
+  );
 }
 
 /** Stable id so the same scrip updates one signal row. The form does not collect a stock id. */
@@ -281,21 +348,26 @@ async function saveSelection(payload: EntryPayload): Promise<void> {
   });
 }
 
-function groupByDateDesc(rows: WatchlistRow[]) {
-  const groups = new Map<string, WatchlistRow[]>();
+function groupByDateDesc<T extends { tradeDate: string }>(rows: T[]) {
+  const groups = new Map<string, T[]>();
   for (const row of rows) {
-    const list = groups.get(row.date) ?? [];
+    const list = groups.get(row.tradeDate) ?? [];
     list.push(row);
-    groups.set(row.date, list);
+    groups.set(row.tradeDate, list);
   }
   return [...groups.entries()].sort(([a], [b]) => b.localeCompare(a));
 }
 
 export function WatchlistWorkspace() {
   const client = useClient();
-  const [scope, setScope] = useState<"active" | "all">("active");
+  const [rows, setRows] = useState<BoardRow[]>([]);
+  const [v0Rows, setV0Rows] = useState<V0Row[]>([]);
+  const [summaryRows, setSummaryRows] = useState<SummaryRow[]>([]);
+  const [summaryModels, setSummaryModels] = useState<"all" | "v0" | "v12">("all");
+  const [stockQuery, setStockQuery] = useState("");
+  const [stockSearch, setStockSearch] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(true);
   const [date, setDate] = useState(todayUtc);
-  const [rows, setRows] = useState<WatchlistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -313,18 +385,68 @@ export function WatchlistWorkspace() {
     setLoading(true);
     setError(null);
     try {
-      setRows(await client.listDailyWatchlist.execute(scope, date));
+      const query = date ? `?date=${encodeURIComponent(date)}` : "";
+      const [payload, v0] = await Promise.all([
+        httpJson<{ data: BoardRow[] }>("GET", `${apiPaths.watchlist}/board${query}`),
+        httpJson<{ data: V0Row[] }>("GET", `${apiPaths.watchlist}/v0${query}`)
+      ]);
+      setRows(payload.data);
+      setV0Rows(v0.data);
     } catch (err) {
       setError(err instanceof ApiError ? err.message : "Could not load watchlist");
       setRows([]);
+      setV0Rows([]);
     } finally {
       setLoading(false);
     }
-  }, [client.listDailyWatchlist, date, scope]);
+  }, [date]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setStockSearch(stockQuery.trim()), 300);
+    return () => window.clearTimeout(timer);
+  }, [stockQuery]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setSummaryLoading(true);
+    const params = new URLSearchParams();
+    if (date) {
+      params.set("date", date);
+    }
+    if (summaryModels !== "all") {
+      params.set("models", summaryModels);
+    }
+    if (stockSearch) {
+      params.set("scrip", stockSearch);
+    }
+    const queryText = params.toString();
+    const query = queryText ? `?${queryText}` : "";
+    void httpJson<{ data: SummaryRow[] }>("GET", `${apiPaths.watchlist}/summary${query}`)
+      .then((payload) => {
+        if (!cancelled) {
+          setSummaryRows(payload.data);
+          setError(null);
+        }
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) {
+          setError(err instanceof ApiError ? err.message : "Could not load summary");
+          setSummaryRows([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSummaryLoading(false);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [date, summaryModels, stockSearch]);
 
   useEffect(() => {
     let cancelled = false;
@@ -369,10 +491,7 @@ export function WatchlistWorkspace() {
   }
 
   const groups = useMemo(() => groupByDateDesc(rows), [rows]);
-  const eligible = useMemo(
-    () => rows.filter((row) => evaluateRowBuyGates(row).allowed).length,
-    [rows]
-  );
+  const v0Groups = useMemo(() => groupByDateDesc(v0Rows), [v0Rows]);
 
   async function onSaveRow(event: FormEvent) {
     event.preventDefault();
@@ -441,7 +560,7 @@ export function WatchlistWorkspace() {
     <section>
       <PageHeader
         title="Daily Watchlist"
-        description="The table is the list. Add opens a blank form. Edit fills that form so you can update the row."
+        description="V1 and V2 stay on the first tab. Early is +15% within 3 days. Strong is +20% within 5 days. V0 is the chance of touching +5% within 5 days. Summary rolls the last five list days into one row per stock."
         actions={
           <Button iconOnly size="sm" aria-label="Add watchlist row" onPress={openAdd}>
             <PlusIcon />
@@ -691,37 +810,16 @@ export function WatchlistWorkspace() {
       ) : null}
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
-        <div className="flex gap-2">
-          <Button
-            appearance={scope === "active" ? "fill" : "outline"}
-            onPress={() => setScope("active")}
-          >
-            Active
-          </Button>
-          <Button
-            appearance={scope === "all" ? "fill" : "outline"}
-            onPress={() => setScope("all")}
-          >
-            All
-          </Button>
-        </div>
-        {scope === "active" ? (
-          <TextField className="w-44">
-            <Label>List day</Label>
-            <Input
-              type="date"
-              value={date}
-              onChange={(event) => {
-                setDate(event.target.value);
-                if (!editingId) {
-                  setForm((current) => ({ ...current, date: event.target.value }));
-                }
-              }}
-            />
-          </TextField>
-        ) : null}
+        <TextField className="w-44">
+          <Label>List day</Label>
+          <Input
+            type="date"
+            value={date}
+            onChange={(event) => setDate(event.target.value)}
+          />
+        </TextField>
         <p className="pb-2 text-sm text-text-100">
-          {loading ? "Loading…" : `${rows.length} rows · ${eligible} eligible BUY`}
+          {loading ? "Loading…" : "Same list day for every tab. Summary looks back five list days."}
         </p>
       </div>
 
@@ -731,83 +829,208 @@ export function WatchlistWorkspace() {
         </p>
       ) : null}
 
-      {loading ? null : groups.length === 0 ? (
-        <p className="text-sm text-text-100">
-          No rows for this list. Use the add button to enter a scrip.
-        </p>
-      ) : (
-        groups.map(([day, dayRows]) => (
-          <div key={day} className="mb-6">
-            <h2 className="mb-2 text-sm font-semibold text-title-50">{day}</h2>
-            <TableRoot>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Scrip</TableHead>
-                  <TableHead>Cat</TableHead>
-                  <TableHead>Grade</TableHead>
-                  <TableHead>Run-up</TableHead>
-                  <TableHead>RR</TableHead>
-                  <TableHead>Plan</TableHead>
-                  <TableHead>Decision</TableHead>
-                  <TableHead>BUY</TableHead>
-                  <TableHead />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {dayRows.map((row) => {
-                  const gate = evaluateRowBuyGates(row);
-                  const planned =
-                    row.planEntry !== null &&
-                    row.planStop !== null &&
-                    row.planTarget !== null;
-                  return (
-                    <TableRow
-                      key={row.id}
-                      className={editingId === row.id ? "bg-background-soft-50" : undefined}
-                    >
-                      <TableCell className="text-title-50">{row.scrip}</TableCell>
-                      <TableCell>{row.category}</TableCell>
-                      <TableCell>{row.grade ?? "—"}</TableCell>
-                      <TableCell>{fmt(row.runUpPct)}</TableCell>
-                      <TableCell>{fmt(row.rewardRisk)}</TableCell>
-                      <TableCell>{planned ? "set" : "incomplete"}</TableCell>
-                      <TableCell>
-                        <Badge size="sm" color={decisionColor(row.decision)}>
-                          {row.decision}
-                        </Badge>
-                      </TableCell>
-                      <TableCell title={gate.reasons.join(" · ") || "Eligible"}>
-                        {gate.allowed ? "yes" : "no"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onPress={() => openEdit(row)}
-                          >
-                            Edit
-                          </Button>
-                          <Button
-                            size="sm"
-                            appearance="outline"
-                            onPress={() => {
-                              setDecideRow(row);
-                              setSkipReason(row.skipReason ?? "");
-                            }}
-                          >
-                            Decide
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </TableRoot>
+      <TabRoot defaultValue="v12" variant="minimal" className="border-0 bg-transparent p-0 shadow-none">
+        <TabList>
+          <TabTrigger value="v12">V1 / V2</TabTrigger>
+          <TabTrigger value="v0">V0</TabTrigger>
+          <TabTrigger value="summary">Summary</TabTrigger>
+        </TabList>
+        <TabContent value="v12" className="px-0 pt-4">
+          {loading ? null : groups.length === 0 ? (
+            <p className="text-sm text-text-100">No V1 or V2 rows yet.</p>
+          ) : (
+            groups.map(([day, dayRows]) => (
+              <div key={day} className="mb-6">
+                <h2 className="mb-2 text-sm font-semibold text-title-50">
+                  {day} · {dayRows.length} rows
+                </h2>
+                <div className="overflow-x-auto">
+                  <TableRoot>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Rank</TableHead>
+                        <TableHead>Scrip</TableHead>
+                        <TableHead>Cat</TableHead>
+                        <TableHead>Early %</TableHead>
+                        <TableHead>Early rank</TableHead>
+                        <TableHead>Strong %</TableHead>
+                        <TableHead>Strong rank</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Sector</TableHead>
+                        <TableHead>Setup</TableHead>
+                        <TableHead>Structure</TableHead>
+                        <TableHead>Rel vol</TableHead>
+                        <TableHead>RSI</TableHead>
+                        <TableHead>Score</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dayRows.map((row) => (
+                        <TableRow key={`${row.tradeDate}-${row.watchlistRank}-${row.scrip}`}>
+                          <TableCell>{row.watchlistRank}</TableCell>
+                          <TableCell>
+                            <ScripLink scrip={row.scrip} />
+                          </TableCell>
+                          <TableCell>{row.category ?? "—"}</TableCell>
+                          <TableCell>{row.earlyPct === null ? "—" : `${fmt(row.earlyPct)}%`}</TableCell>
+                          <TableCell>{row.earlyRank ?? "—"}</TableCell>
+                          <TableCell>{row.strongPct === null ? "—" : `${fmt(row.strongPct)}%`}</TableCell>
+                          <TableCell>{row.strongRank ?? "—"}</TableCell>
+                          <TableCell>{fmt(row.signalPrice)}</TableCell>
+                          <TableCell>{row.sector ?? "—"}</TableCell>
+                          <TableCell>{row.setupStage ?? "—"}</TableCell>
+                          <TableCell>{row.marketStructure ?? "—"}</TableCell>
+                          <TableCell>{fmt(row.relativeVolume)}</TableCell>
+                          <TableCell>{fmt(row.rsi14, 1)}</TableCell>
+                          <TableCell>{fmt(row.preBreakoutScore)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </TableRoot>
+                </div>
+              </div>
+            ))
+          )}
+        </TabContent>
+        <TabContent value="v0" className="px-0 pt-4">
+          {loading ? null : v0Groups.length === 0 ? (
+            <p className="text-sm text-text-100">No V0 rows for this day.</p>
+          ) : (
+            v0Groups.map(([day, dayRows]) => (
+              <div key={day} className="mb-6">
+                <h2 className="mb-2 text-sm font-semibold text-title-50">
+                  {day} · {dayRows.length} rows · chance of touching +5% within 5 days
+                </h2>
+                <div className="overflow-x-auto">
+                  <TableRoot>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Rank</TableHead>
+                        <TableHead>Scrip</TableHead>
+                        <TableHead>Cat</TableHead>
+                        <TableHead>Chance %</TableHead>
+                        <TableHead>Price</TableHead>
+                        <TableHead>Sector</TableHead>
+                        <TableHead>Setup</TableHead>
+                        <TableHead>Structure</TableHead>
+                        <TableHead>Rel vol</TableHead>
+                        <TableHead>Pressure</TableHead>
+                        <TableHead>Resistance %</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dayRows.map((row) => (
+                        <TableRow key={`${row.tradeDate}-${row.watchlistRank}-${row.scrip}`}>
+                          <TableCell>{row.watchlistRank}</TableCell>
+                          <TableCell>
+                            <ScripLink scrip={row.scrip} />
+                          </TableCell>
+                          <TableCell>{row.category ?? "—"}</TableCell>
+                          <TableCell>{row.chancePct === null ? "—" : `${fmt(row.chancePct)}%`}</TableCell>
+                          <TableCell>{fmt(row.signalPrice)}</TableCell>
+                          <TableCell>{row.sector ?? "—"}</TableCell>
+                          <TableCell>{row.setupStage ?? "—"}</TableCell>
+                          <TableCell>{row.marketStructure ?? "—"}</TableCell>
+                          <TableCell>{fmt(row.relativeVolume)}</TableCell>
+                          <TableCell>{fmt(row.breakoutPressure)}</TableCell>
+                          <TableCell>
+                            {row.resistanceDistancePct === null
+                              ? "—"
+                              : `${fmt(row.resistanceDistancePct)}%`}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </TableRoot>
+                </div>
+              </div>
+            ))
+          )}
+        </TabContent>
+        <TabContent value="summary" className="px-0 pt-4">
+          <div className="mb-4 flex flex-wrap items-end gap-3">
+            <TextField className="w-44">
+              <Label>Models</Label>
+              <NativeSelect
+                value={summaryModels}
+                onChange={(event) =>
+                  setSummaryModels(event.target.value as "all" | "v0" | "v12")
+                }
+              >
+                <NativeSelectOption value="all">All</NativeSelectOption>
+                <NativeSelectOption value="v0">V0</NativeSelectOption>
+                <NativeSelectOption value="v12">V1 &amp; V2</NativeSelectOption>
+              </NativeSelect>
+            </TextField>
+            <TextField className="w-52">
+              <Label>Stock</Label>
+              <Input
+                value={stockQuery}
+                placeholder="Scrip"
+                onChange={(event) => setStockQuery(event.target.value)}
+              />
+            </TextField>
           </div>
-        ))
-      )}
+          {summaryLoading && summaryRows.length === 0 ? (
+            <p className="text-sm text-text-100">Loading summary…</p>
+          ) : summaryRows.length === 0 ? (
+            <p className="text-sm text-text-100">No stock matches that filter in the last five list days.</p>
+          ) : (
+            <div className="mb-6">
+              <h2 className="mb-1 text-sm font-semibold text-title-50">
+                {summaryRows[0].windowFrom} to {summaryRows[0].windowTo} · {summaryRows.length} stocks
+              </h2>
+              <p className="mb-2 text-sm text-text-100">
+                Filtered in the database. One row per stock. Days counts only the selected models.
+              </p>
+              <div className="overflow-x-auto">
+                <TableRoot>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rank</TableHead>
+                      <TableHead>Scrip</TableHead>
+                      <TableHead>Days</TableHead>
+                      <TableHead>Streak</TableHead>
+                      <TableHead>Models</TableHead>
+                      <TableHead>Latest</TableHead>
+                      <TableHead>Cat</TableHead>
+                      <TableHead>V0 %</TableHead>
+                      <TableHead>Early %</TableHead>
+                      <TableHead>Strong %</TableHead>
+                      <TableHead>Price</TableHead>
+                      <TableHead>Sector</TableHead>
+                      <TableHead>Structure</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {summaryRows.map((row) => (
+                      <TableRow key={row.scrip}>
+                        <TableCell>{row.summaryRank}</TableCell>
+                        <TableCell>
+                          <ScripLink scrip={row.scrip} />
+                        </TableCell>
+                        <TableCell>
+                          {row.dayCount}/{row.windowDays}
+                        </TableCell>
+                        <TableCell>{row.streak}</TableCell>
+                        <TableCell>{row.models}</TableCell>
+                        <TableCell>{row.latestDate}</TableCell>
+                        <TableCell>{row.category ?? "—"}</TableCell>
+                        <TableCell>{row.v0Pct === null ? "—" : `${fmt(row.v0Pct)}%`}</TableCell>
+                        <TableCell>{row.earlyPct === null ? "—" : `${fmt(row.earlyPct)}%`}</TableCell>
+                        <TableCell>{row.strongPct === null ? "—" : `${fmt(row.strongPct)}%`}</TableCell>
+                        <TableCell>{fmt(row.signalPrice)}</TableCell>
+                        <TableCell>{row.sector ?? "—"}</TableCell>
+                        <TableCell>{row.marketStructure ?? "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </TableRoot>
+              </div>
+            </div>
+          )}
+        </TabContent>
+      </TabRoot>
 
       <Dialog
         isOpen={decideRow !== null}

@@ -7,6 +7,26 @@ import { defineConfig } from "vite";
 
 const root = path.dirname(fileURLToPath(import.meta.url));
 
+function readJsString(source, start) {
+  const quote = source[start];
+  if (quote !== "\"" && quote !== "'") {
+    return null;
+  }
+  let i = start + 1;
+  while (i < source.length) {
+    if (source[i] === "\\") {
+      i += 2;
+      continue;
+    }
+    if (source[i] === quote) {
+      const literal = source.slice(start, i + 1);
+      return { value: JSON.parse(literal), end: i + 1 };
+    }
+    i += 1;
+  }
+  return null;
+}
+
 export default defineConfig({
   plugins: [
     react({
@@ -26,7 +46,7 @@ export default defineConfig({
     },
     {
       name: "watchlog-orange-last",
-      enforce: "post",
+      enforce: "pre",
       transform(code, id) {
         const normalized = id.replace(/\\/g, "/");
         if (!normalized.endsWith("/presentation/assets/styles/index.css")) {
@@ -39,7 +59,22 @@ export default defineConfig({
           path.resolve(root, "./src/presentation/assets/styles/themes/orange.css"),
           "utf8"
         );
-        return `${code}\n/* watchlog-orange-last */\n${orange}`;
+        const block = `\n/* watchlog-orange-last */\n${orange}`;
+        const marker = "const __vite__css = ";
+        const at = code.indexOf(marker);
+        if (at === -1) {
+          return `${code}${block}`;
+        }
+        const literalAt = at + marker.length;
+        const parsed = readJsString(code, literalAt);
+        if (!parsed) {
+          return null;
+        }
+        return (
+          code.slice(0, literalAt) +
+          JSON.stringify(parsed.value + block) +
+          code.slice(parsed.end)
+        );
       }
     },
     {

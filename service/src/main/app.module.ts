@@ -1,4 +1,5 @@
 import { MiddlewareConsumer, Module, RequestMethod, type NestModule } from "@nestjs/common";
+import { AccountJournalController } from "../interface/http/controllers/account-journal-controller.js";
 import { AnalyticsController } from "../interface/http/controllers/analytics-controller.js";
 import { AuthController } from "../interface/http/controllers/auth-controller.js";
 import { DocsController } from "../interface/http/controllers/docs-controller.js";
@@ -19,6 +20,7 @@ import { watchlogProviders } from "./watchlog.providers.js";
     DocsController,
     AuthController,
     WatchlistPlanController,
+    AccountJournalController,
     JournalTradeController,
     WeeklyReviewController,
     AnalyticsController,

@@ -2,6 +2,7 @@ import type { Provider } from "@nestjs/common";
 import { GetAnalytics } from "../application/analytics/get-analytics.js";
 import { ExitJournalTrade } from "../application/journal/exit-journal-trade.js";
 import { GetJournalTrade } from "../application/journal/get-journal-trade.js";
+import { ListAccountTrades } from "../application/journal/list-account-trades.js";
 import { ListJournalTrades } from "../application/journal/list-journal-trades.js";
 import { OpenJournalTrade } from "../application/journal/open-journal-trade.js";
 import { GetMarketContext } from "../application/market/get-market-context.js";
@@ -9,13 +10,18 @@ import { GetModelSignals } from "../application/market/get-model-signals.js";
 import { ListSectors } from "../application/market/list-sectors.js";
 import { GetWeeklyReview } from "../application/review/get-weekly-review.js";
 import { ListWeeklyReviews } from "../application/review/list-weekly-reviews.js";
+import { SaveAccountTrade } from "../application/journal/save-account-trade.js";
 import { SaveWeeklyReview } from "../application/review/save-weekly-review.js";
+import { SetAccountBoId } from "../application/journal/set-account-bo-id.js";
 import { GetCurrentUser } from "../application/user/get-current-user.js";
 import { LoginUser } from "../application/user/login-user.js";
 import { RegisterUser } from "../application/user/register-user.js";
 import { DecideWatchlistRow } from "../application/watchlist/decide-watchlist-row.js";
 import { GetConsensusWatchlist } from "../application/watchlist/get-consensus-watchlist.js";
 import { GetDailyModelWatchlist } from "../application/watchlist/get-daily-model-watchlist.js";
+import { LoadWatchlistBoard } from "../application/watchlist/load-watchlist-board.js";
+import { LoadWatchlistSummary } from "../application/watchlist/load-watchlist-summary.js";
+import { LoadWatchlistV0 } from "../application/watchlist/load-watchlist-v0.js";
 import { GetWatchlistRow } from "../application/watchlist/get-watchlist-row.js";
 import { ListAllWatchlist } from "../application/watchlist/list-all-watchlist.js";
 import { ListDailyWatchlist } from "../application/watchlist/list-daily-plan.js";
@@ -41,6 +47,7 @@ import { DATABASE_HEALTH } from "../interface/http/database-health.js";
 import { createWatchlogPool } from "../infrastructure/database/postgres/watchlog-pool.js";
 import { DseMarketDataClient } from "../infrastructure/dse-service/dse-market-data-client.js";
 import { DseModelSignalClient } from "../infrastructure/dse-service/dse-model-signal-client.js";
+import { PostgresAccountJournalStore } from "../infrastructure/repositories/postgres-account-journal-store.js";
 import { PostgresJournalStore } from "../infrastructure/repositories/postgres-journal-store.js";
 import { PostgresMlWatchlistStore } from "../infrastructure/repositories/postgres-ml-watchlist-store.js";
 import { PostgresReviewStore } from "../infrastructure/repositories/postgres-review-store.js";
@@ -70,6 +77,11 @@ export const watchlogProviders: Provider[] = [
   {
     provide: PostgresMlWatchlistStore,
     useFactory: (pool: PostgresPool) => new PostgresMlWatchlistStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresAccountJournalStore,
+    useFactory: (pool: PostgresPool) => new PostgresAccountJournalStore(pool),
     inject: [PG_POOL]
   },
   {
@@ -161,9 +173,39 @@ export const watchlogProviders: Provider[] = [
     inject: [PostgresMlWatchlistStore]
   },
   {
+    provide: LoadWatchlistBoard,
+    useFactory: (rows: PostgresMlWatchlistStore) => new LoadWatchlistBoard(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: LoadWatchlistV0,
+    useFactory: (rows: PostgresMlWatchlistStore) => new LoadWatchlistV0(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: LoadWatchlistSummary,
+    useFactory: (rows: PostgresMlWatchlistStore) => new LoadWatchlistSummary(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
     provide: UpdateWatchlistOutcomes,
     useFactory: (rows: PostgresMlWatchlistStore) => new UpdateWatchlistOutcomes(rows),
     inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: ListAccountTrades,
+    useFactory: (journal: PostgresAccountJournalStore) => new ListAccountTrades(journal),
+    inject: [PostgresAccountJournalStore]
+  },
+  {
+    provide: SaveAccountTrade,
+    useFactory: (journal: PostgresAccountJournalStore) => new SaveAccountTrade(journal),
+    inject: [PostgresAccountJournalStore]
+  },
+  {
+    provide: SetAccountBoId,
+    useFactory: (journal: PostgresAccountJournalStore) => new SetAccountBoId(journal),
+    inject: [PostgresAccountJournalStore]
   },
   {
     provide: ListJournalTrades,

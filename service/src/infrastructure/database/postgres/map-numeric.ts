@@ -13,7 +13,10 @@ export function toInt(value: unknown): number | null {
 
 export function toIsoDate(value: unknown): string {
   if (value instanceof Date) {
-    return value.toISOString().slice(0, 10);
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
   }
   const text = String(value);
   return text.slice(0, 10);

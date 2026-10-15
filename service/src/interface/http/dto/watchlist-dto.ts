@@ -4,6 +4,10 @@ export const isoDate = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, "date must be YYYY-MM-DD");
 
+export const summaryModelsSchema = z.enum(["all", "v0", "v12"]);
+
+export const summaryScripSchema = z.string().trim().max(32);
+
 const nullableNumber = z.number().finite().nullable().optional();
 
 export const modelHitsSchema = z
