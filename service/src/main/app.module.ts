@@ -5,6 +5,7 @@ import { AuthController } from "../interface/http/controllers/auth-controller.js
 import { DocsController } from "../interface/http/controllers/docs-controller.js";
 import { HealthController } from "../interface/http/controllers/health-controller.js";
 import { JournalTradeController } from "../interface/http/controllers/journal-trade-controller.js";
+import { MyWatchlistController } from "../interface/http/controllers/my-watchlist-controller.js";
 import { MarketController } from "../interface/http/controllers/market-controller.js";
 import { ModelSignalController } from "../interface/http/controllers/model-signal-controller.js";
 import { SectorController } from "../interface/http/controllers/sector-controller.js";
@@ -21,6 +22,7 @@ import { watchlogProviders } from "./watchlog.providers.js";
     AuthController,
     WatchlistPlanController,
     AccountJournalController,
+    MyWatchlistController,
     JournalTradeController,
     WeeklyReviewController,
     AnalyticsController,

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import { AppLayout } from "@/presentation/layouts/AppLayout";
 import { DashboardPage } from "@/presentation/features/dashboard";
 import { WatchlistPage } from "@/presentation/features/watchlist";
+import { MyWatchlistPage } from "@/presentation/features/my-watchlist";
 import { ClosedTradesPage, OpenPositionsPage, TradesPage } from "@/presentation/features/trades";
 import { JournalPage } from "@/presentation/features/journal";
 import { ReviewsPage } from "@/presentation/features/reviews";
@@ -15,6 +16,7 @@ export const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: paths.watchlist.slice(1), element: <WatchlistPage /> },
+      { path: paths.myWatchlist.slice(1), element: <MyWatchlistPage /> },
       { path: "trades", element: <TradesPage /> },
       { path: "trades/open", element: <OpenPositionsPage /> },
       { path: "trades/closed", element: <ClosedTradesPage /> },

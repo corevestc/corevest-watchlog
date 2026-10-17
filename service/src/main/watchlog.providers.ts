@@ -6,6 +6,11 @@ import { ListAccountTrades } from "../application/journal/list-account-trades.js
 import { ListJournalTrades } from "../application/journal/list-journal-trades.js";
 import { OpenJournalTrade } from "../application/journal/open-journal-trade.js";
 import { GetMarketContext } from "../application/market/get-market-context.js";
+import { CreateMyWatchlist } from "../application/my-watchlist/create-my-watchlist.js";
+import { DeleteMyWatchlist } from "../application/my-watchlist/delete-my-watchlist.js";
+import { GetMyWatchlist } from "../application/my-watchlist/get-my-watchlist.js";
+import { ListMyWatchlist } from "../application/my-watchlist/list-my-watchlist.js";
+import { UpdateMyWatchlist } from "../application/my-watchlist/update-my-watchlist.js";
 import { GetModelSignals } from "../application/market/get-model-signals.js";
 import { ListSectors } from "../application/market/list-sectors.js";
 import { GetWeeklyReview } from "../application/review/get-weekly-review.js";
@@ -48,6 +53,7 @@ import { createWatchlogPool } from "../infrastructure/database/postgres/watchlog
 import { DseMarketDataClient } from "../infrastructure/dse-service/dse-market-data-client.js";
 import { DseModelSignalClient } from "../infrastructure/dse-service/dse-model-signal-client.js";
 import { PostgresAccountJournalStore } from "../infrastructure/repositories/postgres-account-journal-store.js";
+import { PostgresMyWatchlistStore } from "../infrastructure/repositories/postgres-my-watchlist-store.js";
 import { PostgresJournalStore } from "../infrastructure/repositories/postgres-journal-store.js";
 import { PostgresMlWatchlistStore } from "../infrastructure/repositories/postgres-ml-watchlist-store.js";
 import { PostgresReviewStore } from "../infrastructure/repositories/postgres-review-store.js";
@@ -82,6 +88,11 @@ export const watchlogProviders: Provider[] = [
   {
     provide: PostgresAccountJournalStore,
     useFactory: (pool: PostgresPool) => new PostgresAccountJournalStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresMyWatchlistStore,
+    useFactory: (pool: PostgresPool) => new PostgresMyWatchlistStore(pool),
     inject: [PG_POOL]
   },
   {
@@ -206,6 +217,31 @@ export const watchlogProviders: Provider[] = [
     provide: SetAccountBoId,
     useFactory: (journal: PostgresAccountJournalStore) => new SetAccountBoId(journal),
     inject: [PostgresAccountJournalStore]
+  },
+  {
+    provide: ListMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new ListMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: CreateMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new CreateMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: GetMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new GetMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: UpdateMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new UpdateMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: DeleteMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new DeleteMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
   },
   {
     provide: ListJournalTrades,

@@ -1,5 +1,6 @@
 export const apiPaths = {
   watchlist: "/api/v1/watchlist",
+  myWatchlist: "/api/v1/my-watchlist",
   trades: "/api/v1/trades",
   journal: "/api/v1/journal",
   reviews: "/api/v1/reviews",

@@ -362,7 +362,7 @@ const SidebarMenuItem = React.forwardRef<
 SidebarMenuItem.displayName = "SidebarMenuItem";
 
 const sidebarMenuButtonVariants = cva(
-  "peer/menu-button p-2 text-left text-sm flex w-full items-center gap-2 overflow-hidden rounded-md outline-none ring-primary-500 hover:bg-background-soft-50 focus-visible:bg-background-soft-50 hover:text-title-100 focus-visible:ring-2 active:bg-background-soft-50 active:text-text-100 disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-background-soft-200 data-[active=true]:font-medium data-[active=true]:text-title-50 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center [&>svg]:size-6 [&>svg]:shrink-0",
+  "peer/menu-button p-2 text-left text-sm flex w-full items-center justify-start gap-2 overflow-hidden rounded-md outline-none ring-primary-500 hover:bg-background-soft-50 focus-visible:bg-background-soft-50 hover:text-title-100 focus-visible:ring-2 active:bg-background-soft-50 active:text-text-100 disabled:pointer-events-none disabled:opacity-50 group-has-[[data-sidebar=menu-action]]/menu-item:pr-8 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-background-soft-200 data-[active=true]:font-medium data-[active=true]:text-title-50 group-data-[collapsible=icon]:size-8 group-data-[collapsible=icon]:p-0 group-data-[collapsible=icon]:justify-center [&>svg]:size-6 [&>svg]:shrink-0",
   {
     variants: {
       variant: {

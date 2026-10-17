@@ -13,7 +13,7 @@ const child = spawn(
   [
     path.join(serviceRoot, "node_modules/tsx/dist/cli.mjs"),
     "watch",
-    "src/main/main.ts"
+    "src/main/main.discipline.ts"
   ],
   {
     cwd: serviceRoot,

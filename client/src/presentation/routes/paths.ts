@@ -1,6 +1,7 @@
 export const paths = {
   dashboard: "/",
   watchlist: "/watchlist",
+  myWatchlist: "/my-watchlist",
   trades: "/trades",
   openPositions: "/trades/open",
   closedTrades: "/trades/closed",

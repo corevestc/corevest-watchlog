@@ -1,0 +1,386 @@
+import type { Provider } from "@nestjs/common";
+import { GetAnalytics } from "../application/analytics/get-analytics.js";
+import { ExitJournalTrade } from "../application/journal/exit-journal-trade.js";
+import { GetJournalTrade } from "../application/journal/get-journal-trade.js";
+import { ListAccountTrades } from "../application/journal/list-account-trades.js";
+import { ListJournalTrades } from "../application/journal/list-journal-trades.js";
+import { OpenJournalTrade } from "../application/journal/open-journal-trade.js";
+import { GetMarketContext } from "../application/market/get-market-context.js";
+import { CloseDisciplineTrade } from "../application/discipline/close-discipline-trade.js";
+import { GetDisciplineDesk } from "../application/discipline/get-discipline-desk.js";
+import { GetDisciplineStats } from "../application/discipline/get-discipline-stats.js";
+import { GetTradingRules } from "../application/discipline/get-trading-rules.js";
+import { MoveDisciplineStop } from "../application/discipline/move-discipline-stop.js";
+import { OpenDisciplineTrade } from "../application/discipline/open-discipline-trade.js";
+import { SaveTradingRules } from "../application/discipline/save-trading-rules.js";
+import { CreateMyWatchlist } from "../application/my-watchlist/create-my-watchlist.js";
+import { DeleteMyWatchlist } from "../application/my-watchlist/delete-my-watchlist.js";
+import { GetMyWatchlist } from "../application/my-watchlist/get-my-watchlist.js";
+import { ListMyWatchlist } from "../application/my-watchlist/list-my-watchlist.js";
+import { UpdateMyWatchlist } from "../application/my-watchlist/update-my-watchlist.js";
+import { GetModelSignals } from "../application/market/get-model-signals.js";
+import { ListSectors } from "../application/market/list-sectors.js";
+import { ListSymbolOptions } from "../application/market/list-symbol-options.js";
+import { GetWeeklyReview } from "../application/review/get-weekly-review.js";
+import { ListWeeklyReviews } from "../application/review/list-weekly-reviews.js";
+import { SaveAccountTrade } from "../application/journal/save-account-trade.js";
+import { SaveWeeklyReview } from "../application/review/save-weekly-review.js";
+import { SetAccountBoId } from "../application/journal/set-account-bo-id.js";
+import { GetCurrentUser } from "../application/user/get-current-user.js";
+import { LoginUser } from "../application/user/login-user.js";
+import { RegisterUser } from "../application/user/register-user.js";
+import { DecideWatchlistRow } from "../application/watchlist/decide-watchlist-row.js";
+import { GetConsensusWatchlist } from "../application/watchlist/get-consensus-watchlist.js";
+import { GetDailyModelWatchlist } from "../application/watchlist/get-daily-model-watchlist.js";
+import { LoadWatchlistBoard } from "../application/watchlist/load-watchlist-board.js";
+import { LoadWatchlistSummary } from "../application/watchlist/load-watchlist-summary.js";
+import { LoadWatchlistV0 } from "../application/watchlist/load-watchlist-v0.js";
+import { GetWatchlistRow } from "../application/watchlist/get-watchlist-row.js";
+import { ListAllWatchlist } from "../application/watchlist/list-all-watchlist.js";
+import { ListDailyWatchlist } from "../application/watchlist/list-daily-plan.js";
+import { PatchWatchlistRow } from "../application/watchlist/patch-watchlist-row.js";
+import { SaveWatchlistRow } from "../application/watchlist/save-watchlist-row.js";
+import { SaveWatchlistSelection } from "../application/watchlist/save-watchlist-selection.js";
+import { SaveWatchlistSignals } from "../application/watchlist/save-watchlist-signals.js";
+import { UpdateWatchlistOutcomes } from "../application/watchlist/update-watchlist-outcomes.js";
+import { HmacTokenIssuer } from "../infrastructure/auth/hmac-token-issuer.js";
+import { ScryptPasswordHasher } from "../infrastructure/auth/scrypt-password-hasher.js";
+import { USER_STORE } from "../application/ports/user-store.js";
+import { env } from "../infrastructure/config/env.js";
+import {
+  DSE_CONFIG,
+  PG_POOL,
+  type DseConfig
+} from "../infrastructure/database/postgres/injection-tokens.js";
+import {
+  checkDatabaseConnection,
+  type PostgresPool
+} from "../infrastructure/database/postgres/pool.js";
+import { DATABASE_HEALTH } from "../interface/http/database-health.js";
+import { createWatchlogPool } from "../infrastructure/database/postgres/watchlog-pool.js";
+import { DseMarketDataClient } from "../infrastructure/dse-service/dse-market-data-client.js";
+import { DseModelSignalClient } from "../infrastructure/dse-service/dse-model-signal-client.js";
+import { PostgresAccountJournalStore } from "../infrastructure/repositories/postgres-account-journal-store.js";
+import { PostgresDisciplineStore } from "../infrastructure/repositories/postgres-discipline-store.js";
+import { PostgresMyWatchlistStore } from "../infrastructure/repositories/postgres-my-watchlist-store.js";
+import { PostgresJournalStore } from "../infrastructure/repositories/postgres-journal-store.js";
+import { PostgresMlWatchlistStore } from "../infrastructure/repositories/postgres-ml-watchlist-store.js";
+import { PostgresReviewStore } from "../infrastructure/repositories/postgres-review-store.js";
+import { PostgresSectorStore } from "../infrastructure/repositories/postgres-sector-store.js";
+import { PostgresSymbolOptionStore } from "../infrastructure/repositories/postgres-symbol-option-store.js";
+import { PostgresUserStore } from "../infrastructure/repositories/postgres-user-store.js";
+import { PostgresWatchlistStore } from "../infrastructure/repositories/postgres-watchlist-store.js";
+import { PostgresConnection } from "./postgres-connection.js";
+
+export const watchlogProviders: Provider[] = [
+  PostgresConnection,
+  {
+    provide: PG_POOL,
+    useFactory: () => createWatchlogPool()
+  },
+  {
+    provide: DSE_CONFIG,
+    useFactory: (): DseConfig => ({
+      baseUrl: env.DSE_DATA_BASE_URL,
+      apiKey: env.DSE_DATA_API_KEY
+    })
+  },
+  {
+    provide: PostgresWatchlistStore,
+    useFactory: (pool: PostgresPool) => new PostgresWatchlistStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresMlWatchlistStore,
+    useFactory: (pool: PostgresPool) => new PostgresMlWatchlistStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresAccountJournalStore,
+    useFactory: (pool: PostgresPool) => new PostgresAccountJournalStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresMyWatchlistStore,
+    useFactory: (pool: PostgresPool) => new PostgresMyWatchlistStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresJournalStore,
+    useFactory: (pool: PostgresPool) => new PostgresJournalStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresReviewStore,
+    useFactory: (pool: PostgresPool) => new PostgresReviewStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresUserStore,
+    useFactory: (pool: PostgresPool) => new PostgresUserStore(pool),
+    inject: [PG_POOL]
+  },
+  { provide: USER_STORE, useExisting: PostgresUserStore },
+  {
+    provide: DATABASE_HEALTH,
+    useFactory: (pool: PostgresPool) => () => checkDatabaseConnection(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: PostgresSectorStore,
+    useFactory: (pool: PostgresPool) => new PostgresSectorStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: DseModelSignalClient,
+    useFactory: (config: DseConfig) => new DseModelSignalClient(config),
+    inject: [DSE_CONFIG]
+  },
+  {
+    provide: DseMarketDataClient,
+    useFactory: (config: DseConfig) => new DseMarketDataClient(config),
+    inject: [DSE_CONFIG]
+  },
+  { provide: ScryptPasswordHasher, useFactory: () => new ScryptPasswordHasher() },
+  { provide: HmacTokenIssuer, useFactory: () => new HmacTokenIssuer() },
+  {
+    provide: ListDailyWatchlist,
+    useFactory: (watchlists: PostgresWatchlistStore) => new ListDailyWatchlist(watchlists),
+    inject: [PostgresWatchlistStore]
+  },
+  {
+    provide: ListAllWatchlist,
+    useFactory: (watchlists: PostgresWatchlistStore) => new ListAllWatchlist(watchlists),
+    inject: [PostgresWatchlistStore]
+  },
+  {
+    provide: GetWatchlistRow,
+    useFactory: (watchlists: PostgresWatchlistStore) => new GetWatchlistRow(watchlists),
+    inject: [PostgresWatchlistStore]
+  },
+  {
+    provide: SaveWatchlistRow,
+    useFactory: (watchlists: PostgresWatchlistStore) => new SaveWatchlistRow(watchlists),
+    inject: [PostgresWatchlistStore]
+  },
+  {
+    provide: PatchWatchlistRow,
+    useFactory: (watchlists: PostgresWatchlistStore) => new PatchWatchlistRow(watchlists),
+    inject: [PostgresWatchlistStore]
+  },
+  {
+    provide: DecideWatchlistRow,
+    useFactory: (watchlists: PostgresWatchlistStore) => new DecideWatchlistRow(watchlists),
+    inject: [PostgresWatchlistStore]
+  },
+  {
+    provide: SaveWatchlistSignals,
+    useFactory: (rows: PostgresMlWatchlistStore) => new SaveWatchlistSignals(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: GetConsensusWatchlist,
+    useFactory: (rows: PostgresMlWatchlistStore) => new GetConsensusWatchlist(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: SaveWatchlistSelection,
+    useFactory: (rows: PostgresMlWatchlistStore) => new SaveWatchlistSelection(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: GetDailyModelWatchlist,
+    useFactory: (rows: PostgresMlWatchlistStore) => new GetDailyModelWatchlist(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: LoadWatchlistBoard,
+    useFactory: (rows: PostgresMlWatchlistStore) => new LoadWatchlistBoard(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: LoadWatchlistV0,
+    useFactory: (rows: PostgresMlWatchlistStore) => new LoadWatchlistV0(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: LoadWatchlistSummary,
+    useFactory: (rows: PostgresMlWatchlistStore) => new LoadWatchlistSummary(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: UpdateWatchlistOutcomes,
+    useFactory: (rows: PostgresMlWatchlistStore) => new UpdateWatchlistOutcomes(rows),
+    inject: [PostgresMlWatchlistStore]
+  },
+  {
+    provide: ListAccountTrades,
+    useFactory: (journal: PostgresAccountJournalStore) => new ListAccountTrades(journal),
+    inject: [PostgresAccountJournalStore]
+  },
+  {
+    provide: SaveAccountTrade,
+    useFactory: (journal: PostgresAccountJournalStore) => new SaveAccountTrade(journal),
+    inject: [PostgresAccountJournalStore]
+  },
+  {
+    provide: SetAccountBoId,
+    useFactory: (journal: PostgresAccountJournalStore) => new SetAccountBoId(journal),
+    inject: [PostgresAccountJournalStore]
+  },
+  {
+    provide: ListMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new ListMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: CreateMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new CreateMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: GetMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new GetMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: UpdateMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new UpdateMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: DeleteMyWatchlist,
+    useFactory: (rows: PostgresMyWatchlistStore) => new DeleteMyWatchlist(rows),
+    inject: [PostgresMyWatchlistStore]
+  },
+  {
+    provide: ListJournalTrades,
+    useFactory: (journal: PostgresJournalStore) => new ListJournalTrades(journal),
+    inject: [PostgresJournalStore]
+  },
+  {
+    provide: GetJournalTrade,
+    useFactory: (journal: PostgresJournalStore) => new GetJournalTrade(journal),
+    inject: [PostgresJournalStore]
+  },
+  {
+    provide: OpenJournalTrade,
+    useFactory: (journal: PostgresJournalStore, watchlists: PostgresWatchlistStore) =>
+      new OpenJournalTrade(journal, watchlists),
+    inject: [PostgresJournalStore, PostgresWatchlistStore]
+  },
+  {
+    provide: ExitJournalTrade,
+    useFactory: (journal: PostgresJournalStore, watchlists: PostgresWatchlistStore) =>
+      new ExitJournalTrade(journal, watchlists),
+    inject: [PostgresJournalStore, PostgresWatchlistStore]
+  },
+  {
+    provide: ListWeeklyReviews,
+    useFactory: (reviews: PostgresReviewStore) => new ListWeeklyReviews(reviews),
+    inject: [PostgresReviewStore]
+  },
+  {
+    provide: GetWeeklyReview,
+    useFactory: (reviews: PostgresReviewStore) => new GetWeeklyReview(reviews),
+    inject: [PostgresReviewStore]
+  },
+  {
+    provide: SaveWeeklyReview,
+    useFactory: (
+      reviews: PostgresReviewStore,
+      journal: PostgresJournalStore,
+      watchlists: PostgresWatchlistStore
+    ) => new SaveWeeklyReview(reviews, journal, watchlists),
+    inject: [PostgresReviewStore, PostgresJournalStore, PostgresWatchlistStore]
+  },
+  {
+    provide: RegisterUser,
+    useFactory: (
+      users: PostgresUserStore,
+      passwords: ScryptPasswordHasher,
+      tokens: HmacTokenIssuer
+    ) => new RegisterUser(users, passwords, tokens),
+    inject: [PostgresUserStore, ScryptPasswordHasher, HmacTokenIssuer]
+  },
+  {
+    provide: LoginUser,
+    useFactory: (
+      users: PostgresUserStore,
+      passwords: ScryptPasswordHasher,
+      tokens: HmacTokenIssuer
+    ) => new LoginUser(users, passwords, tokens),
+    inject: [PostgresUserStore, ScryptPasswordHasher, HmacTokenIssuer]
+  },
+  {
+    provide: GetCurrentUser,
+    useFactory: (users: PostgresUserStore) => new GetCurrentUser(users),
+    inject: [PostgresUserStore]
+  },
+  { provide: GetAnalytics, useFactory: () => new GetAnalytics() },
+  {
+    provide: GetMarketContext,
+    useFactory: (market: DseMarketDataClient) => new GetMarketContext(market),
+    inject: [DseMarketDataClient]
+  },
+  {
+    provide: ListSectors,
+    useFactory: (sectors: PostgresSectorStore) => new ListSectors(sectors),
+    inject: [PostgresSectorStore]
+  },
+  {
+    provide: PostgresSymbolOptionStore,
+    useFactory: (pool: PostgresPool) => new PostgresSymbolOptionStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: ListSymbolOptions,
+    useFactory: (symbols: PostgresSymbolOptionStore) => new ListSymbolOptions(symbols),
+    inject: [PostgresSymbolOptionStore]
+  },
+  {
+    provide: GetModelSignals,
+    useFactory: (signals: DseModelSignalClient) => new GetModelSignals(signals),
+    inject: [DseModelSignalClient]
+  },
+  {
+    provide: PostgresDisciplineStore,
+    useFactory: (pool: PostgresPool) => new PostgresDisciplineStore(pool),
+    inject: [PG_POOL]
+  },
+  {
+    provide: OpenDisciplineTrade,
+    useFactory: (store: PostgresDisciplineStore) => new OpenDisciplineTrade(store),
+    inject: [PostgresDisciplineStore]
+  },
+  {
+    provide: MoveDisciplineStop,
+    useFactory: (store: PostgresDisciplineStore) => new MoveDisciplineStop(store),
+    inject: [PostgresDisciplineStore]
+  },
+  {
+    provide: CloseDisciplineTrade,
+    useFactory: (store: PostgresDisciplineStore) => new CloseDisciplineTrade(store),
+    inject: [PostgresDisciplineStore]
+  },
+  {
+    provide: GetDisciplineStats,
+    useFactory: (store: PostgresDisciplineStore) => new GetDisciplineStats(store),
+    inject: [PostgresDisciplineStore]
+  },
+  {
+    provide: GetDisciplineDesk,
+    useFactory: (store: PostgresDisciplineStore) => new GetDisciplineDesk(store),
+    inject: [PostgresDisciplineStore]
+  },
+  {
+    provide: GetTradingRules,
+    useFactory: (store: PostgresDisciplineStore) => new GetTradingRules(store),
+    inject: [PostgresDisciplineStore]
+  },
+  {
+    provide: SaveTradingRules,
+    useFactory: (store: PostgresDisciplineStore) => new SaveTradingRules(store),
+    inject: [PostgresDisciplineStore]
+  }
+];

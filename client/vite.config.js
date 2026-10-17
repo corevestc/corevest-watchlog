@@ -145,6 +145,13 @@ export default defineConfig({
           "./src/presentation/features/watchlist/watchlist-feature.ts"
         )
       },
+      {
+        find: "@/presentation/features/my-watchlist",
+        replacement: path.resolve(
+          root,
+          "./src/presentation/features/my-watchlist/my-watchlist-feature.ts"
+        )
+      },
       { find: "@", replacement: path.resolve(root, "./src") }
     ]
   },

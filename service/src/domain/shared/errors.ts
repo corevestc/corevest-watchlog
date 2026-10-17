@@ -25,3 +25,18 @@ export class UnauthorizedError extends Error {
     this.name = "UnauthorizedError";
   }
 }
+
+export interface FailedGate {
+  rule: string;
+  message: string;
+}
+
+export class UnprocessableError extends Error {
+  readonly gates: FailedGate[];
+
+  constructor(message: string, gates: FailedGate[] = []) {
+    super(message);
+    this.name = "UnprocessableError";
+    this.gates = gates;
+  }
+}

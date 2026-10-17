@@ -11,7 +11,8 @@ import {
   ConflictError,
   DomainError,
   NotFoundError,
-  UnauthorizedError
+  UnauthorizedError,
+  UnprocessableError
 } from "../../../domain/shared/errors.js";
 import { HttpError } from "../http-error.js";
 
@@ -48,6 +49,11 @@ export class DomainExceptionFilter implements ExceptionFilter {
 
     if (err instanceof ConflictError || errorName(err) === "ConflictError") {
       res.status(409).json({ error: { message: errorMessage(err) } });
+      return;
+    }
+
+    if (err instanceof UnprocessableError || errorName(err) === "UnprocessableError") {
+      res.status(422).json({ error: { message: errorMessage(err) } });
       return;
     }
 

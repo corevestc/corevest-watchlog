@@ -176,14 +176,12 @@ function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-svh items-center justify-center bg-background-soft-50 p-6">
       <div className="w-full max-w-md">
-        <div className="mb-6 flex items-center justify-center gap-3">
-          <span className="flex size-9 items-center justify-center rounded-lg bg-primary-500 text-sm font-semibold text-white-100">
-            WL
-          </span>
-          <div>
-            <p className="text-sm font-semibold text-title-50">WatchLog</p>
-            <p className="text-xs text-text-100">CoreVest Capital</p>
-          </div>
+        <div className="mb-6 flex justify-center">
+          <img
+            src="/corevest-logo.jpg?v=2"
+            alt="CoreVest Capital"
+            className="h-auto w-60 max-w-full rounded-lg bg-white"
+          />
         </div>
         {children}
       </div>
